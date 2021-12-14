@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.off_policy_algorithm import OffPolicyAlgorithm
-from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
+from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, ReplayBufferSamples, Schedule
 from stable_baselines3.common.utils import polyak_update
 from stable_baselines3.sac.policies import SACPolicy
 
@@ -180,7 +180,8 @@ class SAC(OffPolicyAlgorithm):
         self.critic = self.policy.critic
         self.critic_target = self.policy.critic_target
 
-    def train(self, gradient_steps: int, batch_size: int = 64) -> None:
+    # Faisal: Add the discriminator as a parameter
+    def train(self, gradient_steps: int, batch_size: int = 64, d=None) -> None:
         # Switch to train mode (this affects batch norm / dropout)
         self.policy.set_training_mode(True)
         # Update optimizers learning rate
@@ -197,6 +198,27 @@ class SAC(OffPolicyAlgorithm):
         for gradient_step in range(gradient_steps):
             # Sample replay buffer
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
+            # Faisal's code
+            # print(f"d in SAC train {d}")
+            # input()
+            if d:
+                with th.no_grad():
+                    d.eval()
+                    observations = replay_data.observations
+                    # split the observations
+                    env_obs = th.clone(observations[:, : -d.num_skills])
+                    skills = th.clone(observations[:, -d.num_skills:])
+                    # print(f"env_obs shape: {env_obs.shape}")
+                    # print(f"skills shape: {skills.shape}")
+                    # input()
+                    outputs = d(env_obs, skills)
+                    skills_logs_probs =  -outputs - np.log(1/d.num_skills)
+                    # print(f"output of d in SAC code: {skills_logs_probs}")
+                    # input()
+                    data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
+                    replay_data.dones, skills_logs_probs)
+                    replay_data = data
+            # Faisal's code
 
             # We need to sample because `log_std` may have changed between two gradient steps
             if self.use_sde:
@@ -276,6 +298,7 @@ class SAC(OffPolicyAlgorithm):
         if len(ent_coef_losses) > 0:
             self.logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
 
+    # Faisal: Add the discriminator as a parameters
     def learn(
         self,
         total_timesteps: int,
@@ -287,6 +310,7 @@ class SAC(OffPolicyAlgorithm):
         tb_log_name: str = "SAC",
         eval_log_path: Optional[str] = None,
         reset_num_timesteps: bool = True,
+        d = None
     ) -> OffPolicyAlgorithm:
 
         return super(SAC, self).learn(
@@ -299,6 +323,7 @@ class SAC(OffPolicyAlgorithm):
             tb_log_name=tb_log_name,
             eval_log_path=eval_log_path,
             reset_num_timesteps=reset_num_timesteps,
+            d = d
         )
 
     def _excluded_save_params(self) -> List[str]:
