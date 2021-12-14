@@ -212,7 +212,7 @@ class SAC(OffPolicyAlgorithm):
                     # print(f"skills shape: {skills.shape}")
                     # input()
                     outputs = d(env_obs, skills)
-                    skills_logs_probs =  -outputs - np.log(1/d.num_skills)
+                    skills_logs_probs =  th.log(outputs.diag()) - np.log(1/d.num_skills)
                     # print(f"output of d in SAC code: {skills_logs_probs}")
                     # input()
                     data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
