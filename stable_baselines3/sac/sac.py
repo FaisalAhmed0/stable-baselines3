@@ -214,7 +214,7 @@ class SAC(OffPolicyAlgorithm):
                     # print(f"reward shape is: {replay_data.rewards.shape}")
                     logits = d(env_obs, skills)
                     probs = th.softmax(logits/0.07, dim=-1)
-                    skills_logs_probs =  (th.log(probs.diag()) - np.log(1/d.num_skills)).reshape(-1, 1)
+                    skills_logs_probs =  (th.log(probs.diag()) - np.log(1/batch_size)).reshape(-1, 1)
                     # print(f"output of d in SAC code: {skills_logs_probs}")
                     # print(f"output of d shape in SAC code: {skills_logs_probs.shape}")
                     # input()
