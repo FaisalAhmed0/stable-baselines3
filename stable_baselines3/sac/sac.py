@@ -214,7 +214,7 @@ class SAC(OffPolicyAlgorithm):
                     skill_rep = F.normalize(skill_enc(skills), dim=-1)# shape (B * latent)
                     # calculate the score/logits and logprobs
                     logits = th.sum(state_rep[:, None, :] * skill_rep[None, :, :], dim=-1) # shape: (B * B)
-                    log_probs = th.logsoftmax(logits/state_enc.temperature, dim=-1)
+                    log_probs = th.log_softmax(logits/state_enc.temperature, dim=-1)
                     # calculate the reward
                     reward =  (log_probs.diag() - np.log(1/batch_size)).reshape(-1, 1)
                     data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
