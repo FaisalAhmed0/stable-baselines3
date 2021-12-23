@@ -199,27 +199,26 @@ class SAC(OffPolicyAlgorithm):
             # Sample replay buffer
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
             # Faisal's code
-            # print(f"d in SAC train {d}")
-            # input()
             if d:
                 with th.no_grad():
-                    d.eval()
+                    # extract the encoders
+                    state_enc, skill_enc = d
+                    state_enc.eval()
+                    skill_enc.eval()
                     observations = replay_data.observations
                     # split the observations
                     env_obs = th.clone(observations[:, : -d.num_skills])
                     skills = th.clone(observations[:, -d.num_skills:])
-                    # print(f"env_obs shape: {env_obs.shape}")
-                    # print(f"skills shape: {skills.shape}")
-                    # input()
-                    # print(f"reward shape is: {replay_data.rewards.shape}")
-                    logits = d(env_obs, skills)
-                    probs = th.softmax(logits/0.07, dim=-1)
-                    skills_logs_probs =  (th.log(probs.diag()) - np.log(1/batch_size)).reshape(-1, 1)
-                    # print(f"output of d in SAC code: {skills_logs_probs}")
-                    # print(f"output of d shape in SAC code: {skills_logs_probs.shape}")
-                    # input()
+                    # forward pass
+                    state_rep = F.normalize(state_enc(env_obs), dim=-1) # shape (B * latent)
+                    skill_rep = F.normalize(skill_enc(skills), dim=-1)# shape (B * latent)
+                    # calculate the score/logits and logprobs
+                    logits = th.sum(state_rep[:, None, :] * skill_rep[None, :, :], dim=-1) # shape: (B * B)
+                    log_probs = th.logsoftmax(logits/state_enc.temperature, dim=-1)
+                    # calculate the reward
+                    reward =  (log_probs.diag() - np.log(1/batch_size)).reshape(-1, 1)
                     data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
-                    replay_data.dones, skills_logs_probs)
+                    replay_data.dones, reward)
                     replay_data = data
             # Faisal's code
 
