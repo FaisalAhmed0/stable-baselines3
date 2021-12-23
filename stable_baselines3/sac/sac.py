@@ -207,8 +207,8 @@ class SAC(OffPolicyAlgorithm):
                     skill_enc.eval()
                     observations = replay_data.observations
                     # split the observations
-                    env_obs = th.clone(observations[:, : -d.num_skills])
-                    skills = th.clone(observations[:, -d.num_skills:])
+                    env_obs = th.clone(observations[:, : -state_enc.num_skills])
+                    skills = th.clone(observations[:, -state_enc.num_skills:])
                     # forward pass
                     state_rep = F.normalize(state_enc(env_obs), dim=-1) # shape (B * latent)
                     skill_rep = F.normalize(skill_enc(skills), dim=-1)# shape (B * latent)
