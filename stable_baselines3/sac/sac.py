@@ -181,7 +181,9 @@ class SAC(OffPolicyAlgorithm):
         self.critic_target = self.policy.critic_target
 
     # Faisal: Add the discriminator as a parameter
-    def train(self, gradient_steps: int, batch_size: int = 64, d=None) -> None:
+    def train(self, gradient_steps: int, batch_size: int = 64, d=None, mi_estimator=None) -> None:
+        # mi_estimator is a named tuple with the following format
+        # namedtuple('MI_Estimate', "estimator_func estimator_type log_baseline alpha_logit")
         # Switch to train mode (this affects batch norm / dropout)
         self.policy.set_training_mode(True)
         # Update optimizers learning rate
@@ -200,26 +202,19 @@ class SAC(OffPolicyAlgorithm):
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
             # Faisal's code
             if d:
+                observations = replay_data.observations
+                # split the observations
+                env_obs = th.clone(observations[:, : -d.num_skills])
+                skills = th.clone(observations[:, -d.num_skills:])
                 with th.no_grad():
-                    # extract the encoders
-                    state_enc, skill_enc = d
-                    state_enc.eval()
-                    skill_enc.eval()
-                    observations = replay_data.observations
-                    # split the observations
-                    env_obs = th.clone(observations[:, : -state_enc.num_skills])
-                    skills = th.clone(observations[:, -state_enc.num_skills:])
                     # forward pass
-                    state_rep = F.normalize(state_enc(env_obs), dim=-1) # shape (B * latent)
-                    skill_rep = F.normalize(skill_enc(skills), dim=-1)# shape (B * latent)
-                    # calculate the score/logits and logprobs
-                    logits = th.sum(state_rep[:, None, :] * skill_rep[None, :, :], dim=-1) # shape: (B * B)
-                    log_probs = th.log_softmax(logits/state_enc.temperature, dim=-1)
+                    scores = d(env_obs, skills)
                     # calculate the reward
-                    reward =  (log_probs.diag() - np.log(1/batch_size)).reshape(-1, 1)
-                    data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
-                    replay_data.dones, reward)
-                    replay_data = data
+                    estimator = mi_estimator.estimator_func
+                    reward =  estimator(scores, estimator.estimator_type, estimator.log_baseline, estimator.alpha_logit).reshape(-1, 1)
+                data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
+                replay_data.dones, reward)
+                replay_data = data
             # Faisal's code
 
             # We need to sample because `log_std` may have changed between two gradient steps

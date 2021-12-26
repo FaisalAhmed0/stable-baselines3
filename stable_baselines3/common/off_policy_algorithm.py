@@ -336,7 +336,8 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         tb_log_name: str = "run",
         eval_log_path: Optional[str] = None,
         reset_num_timesteps: bool = True,
-        d = None
+        d = None,
+        mi_estimator=None
     ) -> "OffPolicyAlgorithm":
         # print(f"d in super learn: {d}")
         # input()
@@ -374,14 +375,14 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                 # Special case when the user passes `gradient_steps=0`
                 if gradient_steps > 0:
                     # Faisal: add the disriminator as parameters
-                    self.train(batch_size=self.batch_size, gradient_steps=gradient_steps, d=d)
+                    self.train(batch_size=self.batch_size, gradient_steps=gradient_steps, d=d, mi_estimator=mi_estimator)
 
         callback.on_training_end()
 
         return self
 
     # Faisal: Added the discriminator as a parameters
-    def train(self, gradient_steps: int, batch_size: int, d=None) -> None:
+    def train(self, gradient_steps: int, batch_size: int, d=None, mi_estimator=None) -> None:
         """
         Sample the replay buffer and do the updates
         (gradient descent and update target networks)
