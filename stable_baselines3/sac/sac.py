@@ -211,7 +211,7 @@ class SAC(OffPolicyAlgorithm):
                     scores = d(env_obs, skills)
                     # calculate the reward
                     estimator = mi_estimator.estimator_func
-                    reward =  estimator(scores, estimator.estimator_type, estimator.log_baseline, estimator.alpha_logit).reshape(-1, 1)
+                    reward =  estimator(scores, mi_estimator.estimator_type, mi_estimator.log_baseline, mi_estimator.alpha_logit).reshape(-1, 1)
                 data = ReplayBufferSamples(replay_data.observations, replay_data.actions, replay_data.next_observations, 
                 replay_data.dones, reward)
                 replay_data = data
