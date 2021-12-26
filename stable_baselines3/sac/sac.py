@@ -202,6 +202,7 @@ class SAC(OffPolicyAlgorithm):
             replay_data = self.replay_buffer.sample(batch_size, env=self._vec_normalize_env)
             # Faisal's code
             if d:
+                d.eval()
                 observations = replay_data.observations
                 # split the observations
                 env_obs = th.clone(observations[:, : -d.num_skills])
