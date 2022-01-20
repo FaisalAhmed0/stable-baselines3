@@ -428,9 +428,9 @@ class OffPolicyAlgorithm(BaseAlgorithm):
             if action_noise is not None:
                 scaled_action = np.clip(scaled_action + action_noise(), -1, 1)
 
-            # We store the scaled action in the buffer
-            buffer_action = scaled_action
+            # We store the unscaled action in the buffer
             action = self.policy.unscale_action(scaled_action)
+            buffer_action = action
         else:
             # Discrete case, no need to normalize or clip
             buffer_action = unscaled_action
