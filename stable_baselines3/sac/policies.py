@@ -64,7 +64,6 @@ class Actor(BasePolicy):
         use_expln: bool = False,
         clip_mean: float = 2.0,
         normalize_images: bool = True,
-        squash = True
     ):
         super(Actor, self).__init__(
             observation_space,
@@ -106,11 +105,9 @@ class Actor(BasePolicy):
             if clip_mean > 0.0:
                 self.mu = nn.Sequential(self.mu, nn.Hardtanh(min_val=-clip_mean, max_val=clip_mean))
         else:
-            if squash:
-                self.action_dist = SquashedDiagGaussianDistribution(action_dim)
-            else:
-                print("HHHERE")
-                self.action_dist = DiagGaussianDistribution(action_dim)
+            # self.action_dist = SquashedDiagGaussianDistribution(action_dim)
+            # else:
+            self.action_dist = DiagGaussianDistribution(action_dim)
             # print("here")
             self.mu = nn.Linear(last_layer_dim, action_dim)
             self.log_std = nn.Linear(last_layer_dim, action_dim)
@@ -242,7 +239,6 @@ class SACPolicy(BasePolicy):
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
         n_critics: int = 2,
         share_features_extractor: bool = True,
-        squash = True # squash the policy disctribution with tanh
     ):
         super(SACPolicy, self).__init__(
             observation_space,
@@ -252,7 +248,6 @@ class SACPolicy(BasePolicy):
             optimizer_class=optimizer_class,
             optimizer_kwargs=optimizer_kwargs,
             squash_output=True,
-            squash=squash
         )
 
         if net_arch is None:
@@ -271,7 +266,6 @@ class SACPolicy(BasePolicy):
             "net_arch": actor_arch,
             "activation_fn": self.activation_fn,
             "normalize_images": normalize_images,
-            "squash": squash
         }
         self.actor_kwargs = self.net_args.copy()
 
