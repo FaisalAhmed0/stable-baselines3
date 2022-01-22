@@ -105,9 +105,7 @@ class Actor(BasePolicy):
             if clip_mean > 0.0:
                 self.mu = nn.Sequential(self.mu, nn.Hardtanh(min_val=-clip_mean, max_val=clip_mean))
         else:
-            # self.action_dist = SquashedDiagGaussianDistribution(action_dim)
-            # else:
-            self.action_dist = DiagGaussianDistribution(action_dim)
+            self.action_dist = SquashedDiagGaussianDistribution(action_dim)
             # print("here")
             self.mu = nn.Linear(last_layer_dim, action_dim)
             self.log_std = nn.Linear(last_layer_dim, action_dim)
