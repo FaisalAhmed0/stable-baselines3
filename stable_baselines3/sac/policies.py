@@ -107,7 +107,7 @@ class Actor(BasePolicy):
         else:
             # self.action_dist = SquashedDiagGaussianDistribution(action_dim)
             # else:
-            self.action_dist = SquashedDiagGaussianDistribution(action_dim)
+            self.action_dist = DiagGaussianDistribution(action_dim)
             # print("here")
             self.mu = nn.Linear(last_layer_dim, action_dim)
             self.log_std = nn.Linear(last_layer_dim, action_dim)
